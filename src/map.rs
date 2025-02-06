@@ -7,23 +7,22 @@ pub struct Room {
     pub pos: (i32, i32),
     pub name: String,
     pub connections: Vec<Rc<RoomConnection>>,
-    pub items: Vec<Box<dyn InventoryItem>>,
+    pub items: Vec<Rc<RefCell<dyn InventoryItem>>>,
 }
 
 #[derive(Debug)]
 pub struct RoomConnection {
-    pub r1: Rc<Room>,
-    pub r2: Rc<Room>,
+    pub r1: Rc<RefCell<Room>>,
+    pub r2: Rc<RefCell<Room>>,
 }
 
 #[derive(Debug)]
 pub struct Map {
-    rooms: Vec<Rc<Room>>,
-    connections: Vec<Rc<RoomConnection>>,
+    rooms: Vec<Rc<RefCell<Room>>>,
+    connections: Vec<Rc<RefCell<RoomConnection>>>,
 }
 
 impl Map {
-    /// Empty new Map object
     pub fn new() -> Map {
         Map {
             rooms: vec![],
@@ -31,40 +30,36 @@ impl Map {
         }
     }
 
-    // Creates new room in place and returns a Rc pointer to the new allocation
-    pub fn add_room(&mut self, size: (i32, i32), pos: (i32, i32)) -> Rc<Room> {
-        self.rooms.push(Rc::new(Room {
-            size,
-            pos,
-            name: "".to_string(),
-            connections: vec![],
-            items: vec![],
-        }));
+    pub fn add_room(&mut self, size: (i32, i32), pos: (i32, i32)) -> Rc<RefCell<Room>> {
+        let room = Rc::new(RefCell::new(Room::new(size, pos)));
+
+        self.rooms.push(room);
 
         Rc::clone(self.rooms.last().unwrap())
     }
 
-    pub fn create_connection(
-        &mut self,
-        r1: &mut Rc<Room>,
-        r2: &mut Rc<Room>,
-    ) -> Option<&Rc<RoomConnection>> {
-        let con = Rc::new(RoomConnection {
-            r1: Rc::clone(r1),
-            r2: Rc::clone(r2),
-        });
-
-        self.connections.push(Rc::clone(&con));
-
-        Rc::get_mut(r1).unwrap().connections.push(Rc::clone(&con));
-        Rc::get_mut(r2).unwrap().connections.push(Rc::clone(&con));
-
-        self.connections.last()
+    pub fn create_connection(&mut self, r1: &Rc<RefCell<Room>>, r2: &Rc<RefCell<Room>>) {
+        let con = RoomConnection::build(r1, r2);
     }
 }
 
 impl Room {
-    pub fn add_item<T: InventoryItem>(&mut self, item: T) {
-        self.items.push(Box::new(item));
+    pub fn new(size: (i32, i32), pos: (i32, i32)) -> Room {
+        Room {
+            size,
+            pos,
+            name: String::new(),
+            connections: vec![],
+            items: vec![],
+        }
+    }
+}
+
+impl RoomConnection {
+    pub fn build(r1: &Rc<RefCell<Room>>, r2: &Rc<RefCell<Room>>) -> RoomConnection {
+        RoomConnection {
+            r1: Rc::clone(r1),
+            r2: Rc::clone(r2),
+        }
     }
 }
