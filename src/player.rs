@@ -1,19 +1,19 @@
 use crate::map::Room;
 use std::any::Any;
-use std::{cell::RefCell, ops::RangeInclusive, rc::Rc};
+use std::{ops::RangeInclusive, rc::Rc};
 
 #[derive(Debug)]
 pub struct Player {
-    health: i32,
-    level: i32,
-    current_room: Option<Rc<Room>>,
-    equipped_weapon: Option<Rc<Weapon>>,
-    inventory: Vec<Box<dyn InventoryItem>>,
+    pub health: i32,
+    pub level: i32,
+    pub current_room: Option<Rc<Room>>,
+    pub equipped_weapon: Option<Rc<Weapon>>,
+    pub inventory: Vec<Box<dyn InventoryItem>>,
 }
 
 #[derive(Debug)]
 pub struct Weapon {
-    dmg_range: RangeInclusive<i32>,
+    pub dmg_range: RangeInclusive<i32>,
 }
 
 pub trait InventoryItem: IIToAny {

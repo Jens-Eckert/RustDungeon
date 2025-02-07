@@ -6,7 +6,7 @@ pub struct Room {
     pub size: (i32, i32),
     pub pos: (i32, i32),
     pub name: String,
-    pub connections: Vec<Rc<RoomConnection>>,
+    pub connections: Vec<Rc<RefCell<RoomConnection>>>,
     pub items: Vec<Rc<RefCell<dyn InventoryItem>>>,
 }
 
@@ -18,8 +18,8 @@ pub struct RoomConnection {
 
 #[derive(Debug)]
 pub struct Map {
-    rooms: Vec<Rc<RefCell<Room>>>,
-    connections: Vec<Rc<RefCell<RoomConnection>>>,
+    pub rooms: Vec<Rc<RefCell<Room>>>,
+    pub connections: Vec<Rc<RefCell<RoomConnection>>>,
 }
 
 impl Map {
@@ -38,8 +38,23 @@ impl Map {
         Rc::clone(self.rooms.last().unwrap())
     }
 
-    pub fn create_connection(&mut self, r1: &Rc<RefCell<Room>>, r2: &Rc<RefCell<Room>>) {
+    pub fn create_connection(
+        &mut self,
+        r1: &Rc<RefCell<Room>>,
+        r2: &Rc<RefCell<Room>>,
+    ) -> Rc<RefCell<RoomConnection>> {
         let con = RoomConnection::build(r1, r2);
+
+        self.connections.push(Rc::new(RefCell::new(con)));
+
+        r1.borrow_mut()
+            .connections
+            .push(Rc::clone(self.connections.last().unwrap()));
+        r2.borrow_mut()
+            .connections
+            .push(Rc::clone(self.connections.last().unwrap()));
+
+        Rc::clone(self.connections.last().unwrap())
     }
 }
 
