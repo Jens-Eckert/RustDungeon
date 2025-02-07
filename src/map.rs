@@ -1,25 +1,28 @@
 use crate::player::InventoryItem;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, rc::Weak};
 
 #[derive(Debug)]
 pub struct Room {
     pub size: (i32, i32),
     pub pos: (i32, i32),
     pub name: String,
-    pub connections: Vec<Rc<RefCell<RoomConnection>>>,
+    pub connections: Vec<Weak<RefCell<RoomConnection>>>,
     pub items: Vec<Rc<RefCell<dyn InventoryItem>>>,
 }
 
 #[derive(Debug)]
 pub struct RoomConnection {
-    pub r1: Rc<RefCell<Room>>,
-    pub r2: Rc<RefCell<Room>>,
+    pub r1: Weak<RefCell<Room>>,
+    pub r2: Weak<RefCell<Room>>,
 }
 
+// Map owns all Rooms and Connections, Room and Connection only weakly refer to each other
 #[derive(Debug)]
 pub struct Map {
     pub rooms: Vec<Rc<RefCell<Room>>>,
     pub connections: Vec<Rc<RefCell<RoomConnection>>>,
+    pub camera_point: (i32, i32), // Not a real camera, just where the view is centered
+    pub fov: i32,                 // How many rows are visible
 }
 
 impl Map {
@@ -27,15 +30,19 @@ impl Map {
         Map {
             rooms: vec![],
             connections: vec![],
+            camera_point: (0, 0),
+            fov: 20,
         }
     }
 
     pub fn add_room(&mut self, size: (i32, i32), pos: (i32, i32)) -> Rc<RefCell<Room>> {
         let room = Rc::new(RefCell::new(Room::new(size, pos)));
 
+        let ret = Rc::clone(&room);
+
         self.rooms.push(room);
 
-        Rc::clone(self.rooms.last().unwrap())
+        ret
     }
 
     pub fn create_connection(
@@ -49,10 +56,10 @@ impl Map {
 
         r1.borrow_mut()
             .connections
-            .push(Rc::clone(self.connections.last().unwrap()));
+            .push(Rc::downgrade(self.connections.last().unwrap()));
         r2.borrow_mut()
             .connections
-            .push(Rc::clone(self.connections.last().unwrap()));
+            .push(Rc::downgrade(self.connections.last().unwrap()));
 
         Rc::clone(self.connections.last().unwrap())
     }
@@ -73,8 +80,8 @@ impl Room {
 impl RoomConnection {
     pub fn build(r1: &Rc<RefCell<Room>>, r2: &Rc<RefCell<Room>>) -> RoomConnection {
         RoomConnection {
-            r1: Rc::clone(r1),
-            r2: Rc::clone(r2),
+            r1: Rc::downgrade(r1),
+            r2: Rc::downgrade(r2),
         }
     }
 }

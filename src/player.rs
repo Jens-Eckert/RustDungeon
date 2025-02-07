@@ -1,6 +1,6 @@
 use crate::map::Room;
 use std::any::Any;
-use std::{ops::RangeInclusive, rc::Rc};
+use std::{ops::RangeInclusive, rc::Rc, rc::Weak};
 
 #[derive(Debug)]
 pub struct Player {
@@ -16,6 +16,7 @@ pub struct Weapon {
     pub dmg_range: RangeInclusive<i32>,
 }
 
+// Some light type gymnastics
 pub trait InventoryItem: IIToAny {
     fn get_type(&self) -> InvType;
 }
